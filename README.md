@@ -1,2 +1,0 @@
-# TestCobol
-Test cobol CGM
