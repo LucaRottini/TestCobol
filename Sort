@@ -1,0 +1,135 @@
+       PROCESS APOST
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID.         SORT001.
+      *
+      *----------------------------------------------------------------*
+      *                                                                *
+      *----------------------------------------------------------------*
+       ENVIRONMENT DIVISION.
+       CONFIGURATION SECTION.
+       SOURCE-COMPUTER.        IBM-AS400.
+       OBJECT-COMPUTER.        IBM-AS400.
+       SPECIAL-NAMES. REQUESTOR     IS CONSOLE
+                      DECIMAL-POINT IS COMMA
+                      I-O-FEEDBACK  IS FEEDBACK-AREA.
+      *
+      *----------------------------------------------------------------*
+       INPUT-OUTPUT SECTION.
+       FILE-CONTROL.
+      *
+      *----------------------------------------------------------------*
+       DATA DIVISION.
+       FILE SECTION.
+      *
+      *----------------------------------------------------------------*
+       WORKING-STORAGE SECTION.
+      *
+       01  WK-COMODO.
+           05  I1                   PIC 9(02).
+           05  I2                   PIC 9(02).
+           05  REC-TEMP             PIC X(50).
+           05  KEY1                 PIC X(50).
+           05  FILLER REDEFINES KEY1.
+               10  KEY1-N           PIC 9(18).
+               10  FILLER           PIC X(32).
+           05  KEY2                 PIC X(50).
+           05  FILLER REDEFINES KEY2.
+               10  KEY2-N           PIC 9(18).
+               10  FILLER           PIC X(32).
+      *
+      *----------------------------------------------------------------*
+       LINKAGE SECTION.
+      *
+       01  AREA-SORT.
+           03   SORT-RC         PIC 9(02).
+           03   SORT-TIPO-KEY   PIC X(01).
+                88  SORT-TIPO-KEY-N       VALUE 'N'.
+                88  SORT-TIPO-KEY-A       VALUE 'A'.
+           03   SORT-KEY-INIZIO PIC 9(02).
+           03   SORT-KEY-LEN    PIC 9(02).
+           03   SORT-TAB.
+                10   SORT-REC   PIC X(50) OCCURS 5.
+      *
+      *----------------------------------------------------------------*
+       PROCEDURE DIVISION USING  AREA-SORT.
+      *----------------------------------------------------------------*
+       MAIN-PROGRAM.
+           PERFORM INIZIO
+           PERFORM ELABORAZIONE
+           PERFORM FINE-ELAB
+           GOBACK.
+      *
+      *----------------------------------------------------------------*
+      *    S O T T O P R O G R A M M I                                 *
+      *----------------------------------------------------------------*
+       INIZIO.
+      *
+           INITIALIZE I1
+                      I2
+                      REC-TEMP
+                      KEY1
+                      KEY2
+                      SORT-RC.
+      *
+           IF  NOT SORT-TIPO-KEY-N
+           AND NOT SORT-TIPO-KEY-A
+               MOVE 99 TO SORT-RC
+               DISPLAY 'TIPO CHIAVE NON DEFINITA'
+           END-IF.
+      *
+           IF   SORT-KEY-INIZIO = ZEROES
+                MOVE 1 TO SORT-KEY-INIZIO
+           END-IF.
+      *
+           IF   SORT-KEY-LEN    = ZEROES
+                MOVE 50 TO SORT-KEY-LEN
+           END-IF.
+      *
+           IF   SORT-TIPO-KEY-N
+           AND  SORT-KEY-LEN    > 18
+                MOVE 98 TO SORT-RC
+                DISPLAY 'LUNGHEZZA CHIAVE DECIMALE TROPPO GRANDE'
+           END-IF.
+      *
+      *----------------------------------------------------------------*
+      *    Routine principale di elaborazione                          *
+      *----------------------------------------------------------------*
+       ELABORAZIONE.
+      *
+           PERFORM
+           VARYING I1 FROM 1 BY 1
+             UNTIL I1 = 5
+                OR SORT-RC NOT = ZEROES
+                   PERFORM
+                   VARYING I2 FROM I1 BY 1
+                     UNTIL I2 > 5
+                           PERFORM TRATTA-SORT
+                   END-PERFORM
+           END-PERFORM.
+      *
+      *----------------------------------------------------------------*
+       TRATTA-SORT.
+      *
+           IF SORT-TIPO-KEY-N
+              MOVE SORT-REC(I1) (SORT-KEY-INIZIO:SORT-KEY-LEN)
+                   TO KEY1-N
+              MOVE SORT-REC(I2) (SORT-KEY-INIZIO:SORT-KEY-LEN)
+                   TO KEY2-N
+           ELSE
+              MOVE SORT-REC(I1) (SORT-KEY-INIZIO:SORT-KEY-LEN)
+                   TO KEY1
+              MOVE SORT-REC(I2) (SORT-KEY-INIZIO:SORT-KEY-LEN)
+                   TO KEY2
+           END-IF.
+      *
+           IF KEY1 > KEY2
+              MOVE SORT-REC(I2) TO REC-TEMP
+              MOVE SORT-REC(I1) TO SORT-REC(I2)
+              MOVE REC-TEMP     TO SORT-REC(I1)
+           END-IF.
+      *
+      *---------------------------------------------------------------*
+      *    ROUTINE DI FINE LAVORO                                     *
+      *---------------------------------------------------------------*
+       FINE-ELAB.
+      *
